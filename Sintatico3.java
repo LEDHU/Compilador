@@ -5,7 +5,6 @@ import java.util.ArrayList;
 public class Sintatico3 {
     private final Lexico lexico;
     private Token token;
-    int k;
     ArrayList<String> listaId = new ArrayList<>();
 
     public Sintatico3(Lexico lexico) {
@@ -94,9 +93,9 @@ public class Sintatico3 {
         if(listaId.contains(this.token.getLexema())){
             throw new RuntimeException("O identificador " + this.token.getLexema() +" já foi declarado.");
         }
-        else{
-            listaId.add(this.token.getLexema());
-        }
+
+        listaId.add(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equalsIgnoreCase(";")) {
             throw new RuntimeException("Tu vacilou  na delcaração de variável. "
@@ -128,6 +127,7 @@ public class Sintatico3 {
         }
 
         this.token = this.lexico.nextToken();
+        this.FOIDECLARADO();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
             throw new RuntimeException("Era para ter um inteiro ou um indetificador");
         }
@@ -158,6 +158,7 @@ public class Sintatico3 {
         }
 
         this.token = this.lexico.nextToken();
+        this.FOIDECLARADO();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
             throw new RuntimeException("Era para ter um inteiro ou um indetificador");
         }
@@ -183,6 +184,12 @@ public class Sintatico3 {
 
     private void SENAO() {
         this.B();
+    }
+
+    private void FOIDECLARADO(){
+        if(!listaId.contains(this.token.getLexema())){
+            throw new RuntimeException("O identificador '" + this.token.getLexema() + "' não foi declarado.");
+        }
     }
 
     private void E() {
