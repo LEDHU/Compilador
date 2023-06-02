@@ -1,9 +1,13 @@
 main(){
-    int a;
     int b;
-    while(casa == 10){
+    while(x == 10){
         int a;
         a = a + 10;
+    }
+    if (b > 5){
+        int a;
+        int b;
+        a = a - 5;
     }
 }
 $

@@ -5,51 +5,54 @@ import java.util.ArrayList;
 public class Sintatico3 {
     private final Lexico lexico;
     private Token token;
-    ArrayList<String> listaId = new ArrayList<>();
+    private ArrayList<Tabela> tabela;
+    private int k;
 
     public Sintatico3(Lexico lexico) {
         this.lexico = lexico;
+        this.tabela = new ArrayList<>();
+        this.k = 0;
     }
 
-    public void S() {//S determina estado inicial
+    public void S() {
         this.token = this.lexico.nextToken();
         if (!token.getLexema().equals("main")) {
-            throw new RuntimeException("Oxe, cadê main?");
+            throw new RuntimeException("Oxe, cadê o main?");
         }
 
         this.token = this.lexico.nextToken();
         if (!token.getLexema().equals("(")) {
-            throw new RuntimeException("Abre o parêntese do main cabra!");
+            throw new RuntimeException("Abre o parêntese do main, cabra!");
         }
 
         this.token = this.lexico.nextToken();
         if (!token.getLexema().equals(")")) {
-            throw new RuntimeException("Fechar o parêntese do main cabra!");
+            throw new RuntimeException("Fecha o parêntese do main, cabra!");
         }
         this.token = this.lexico.nextToken();
 
         this.B();
         if (this.token.getTipo() == Token.TIPO_FIM_CODIGO) {
-            System.out.println("O Código tá massa! Arretado! Tu botou pra torar!");
+            System.out.println("O código tá massa! Arretado! Tu botou pra torar!");
         } else {
-            throw new RuntimeException("Oxe, eu deu bronca preto do fim do programa.");
+            throw new RuntimeException("Oxe, deu bronca perto do fim do programa.");
         }
     }
 
     private void B() {
         if (!this.token.getLexema().equals("{")) {
-            throw new RuntimeException("Oxe, tave esperando um \"{\" pertinho de " + this.token.getLexema());
+            throw new RuntimeException("Oxe, era pra ter um \"{\" perto de " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
         this.CS();
         if (!this.token.getLexema().equals("}")) {
-            throw new RuntimeException("Oxe, tava esperando um \"}\" pertinho de " + this.token.getLexema());
+            throw new RuntimeException("Oxe, era pra ter um \"}\" perto de " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
     }
 
     private void CS() {
-        if ((this.token.getTipo() == Token.TIPO_IDENTIFICADOR) ||
+        if (this.token.getTipo() == Token.TIPO_IDENTIFICADOR ||
                 this.token.getLexema().equals("int") ||
                 this.token.getLexema().equals("float") ||
                 this.token.getLexema().equals("if") ||
@@ -69,126 +72,135 @@ public class Sintatico3 {
             this.DECLARACAO();
         } else if (this.token.getLexema().equals("if")) {
             this.CONDICIONAL();
-        } else if ((this.token.getLexema().equals("while"))) {
-            this.LACODEREPETICAO();
+        } else if (this.token.getLexema().equals("while")) {
+            this.LACODEREPETICAOWHILE();
         } else if (this.token.getLexema().equals("else")) {
             this.SENAO();
         } else {
-            throw new RuntimeException("Oxe, eu tava esperando tu "
-                    + "declarar um comando pertinho de :" + this.token.getLexema());
+            throw new RuntimeException("Oxe, era pra ter declarado um comando perto de: " + this.token.getLexema());
         }
     }
 
     private void DECLARACAO() {
-        if (!(this.token.getLexema().equals("int") ||
-                this.token.getLexema().equals("float"))) {
-            throw new RuntimeException("Tu vacilou na delcaração de variável. "
-                    + "Pertinho de: " + this.token.getLexema());
+        if (!(this.token.getLexema().equals("int") || this.token.getLexema().equals("float"))) {
+            throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_IDENTIFICADOR) {
-            throw new RuntimeException("Tu vacilou na delcaração de variável. "
-                    + "Pertinho de: " + this.token.getLexema());
+            throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
-        if(listaId.contains(this.token.getLexema())){
-            throw new RuntimeException("O identificador " + this.token.getLexema() +" já foi declarado.");
-        }
-
-        listaId.add(this.token.getLexema());
-
+        String identificador = this.token.getLexema();
         this.token = this.lexico.nextToken();
-        if (!this.token.getLexema().equalsIgnoreCase(";")) {
-            throw new RuntimeException("Tu vacilou  na delcaração de variável. "
-                    + "Pertinho de: " + this.token.getLexema());
+        if (!this.token.getLexema().equals(";")) {
+            throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
+
+        tabela.add(new Tabela(identificador, k));
     }
 
     private void ATRIBUICAO() {
         if (this.token.getTipo() != Token.TIPO_IDENTIFICADOR) {
-            throw new RuntimeException("Erro na atribuição. Pertinho de: " + this.token.getLexema());
+            throw new RuntimeException("Erro na atribuição. Perto de: " + this.token.getLexema());
         }
+        String identificador = this.token.getLexema();
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_ATRIBUICAO) {
-            throw new RuntimeException("Erro na atribuição. Pertinho de: " + this.token.getLexema());
+            throw new RuntimeException("Erro na atribuição. Perto de: " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
         this.E();
         if (!this.token.getLexema().equals(";")) {
-            throw new RuntimeException("Erro na atribuição. Pertinho de: " + this.token.getLexema());
+            throw new RuntimeException("Erro na atribuição. Perto de: " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
+
+        buscarIdentificador(identificador);
     }
 
-    private void LACODEREPETICAO() {
+    private void LACODEREPETICAOWHILE() {
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals("(")) {
-            throw new RuntimeException("Era para ter aberto o parentese");
+            throw new RuntimeException("Era pra ter aberto o parêntese");
         }
 
         this.token = this.lexico.nextToken();
-        this.FOIDECLARADO();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
-            throw new RuntimeException("Era para ter um inteiro ou um indetificador");
+            throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_RELACIONAL) {
-            throw new RuntimeException("Era para ter um operador relacional");
+            throw new RuntimeException("Era pra ter um operador relacional");
         }
 
         this.token = this.lexico.nextToken();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
-            throw new RuntimeException("Era para ter um inteiro ou um indetificador");
+            throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals(")")) {
-            throw new RuntimeException("Era para ter fechado parenteses");
+            throw new RuntimeException("Era pra ter fechado o parêntese");
         }
         this.token = this.lexico.nextToken();
 
         this.B();
+
+        buscarIdentificador(null);
     }
 
     private void CONDICIONAL() {
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals("(")) {
-            throw new RuntimeException("Era para ter aberto o parentese");
+            throw new RuntimeException("Era pra ter aberto o parêntese");
         }
 
         this.token = this.lexico.nextToken();
-        this.FOIDECLARADO();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
-            throw new RuntimeException("Era para ter um inteiro ou um indetificador");
+            throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_RELACIONAL) {
-            throw new RuntimeException("Era para ter um operador relacional");
+            throw new RuntimeException("Era pra ter um operador relacional");
         }
 
         this.token = this.lexico.nextToken();
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
-            throw new RuntimeException("Era para ter um inteiro ou um indetificador");
+            throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals(")")) {
-            throw new RuntimeException("Era para ter fechado parenteses");
+            throw new RuntimeException("Era pra ter fechado o parêntese");
         }
         this.token = this.lexico.nextToken();
 
         this.B();
+
+        buscarIdentificador(null);
     }
 
     private void SENAO() {
+        this.token = this.lexico.nextToken();
         this.B();
     }
 
-    private void FOIDECLARADO(){
-        if(!listaId.contains(this.token.getLexema())){
-            throw new RuntimeException("O identificador '" + this.token.getLexema() + "' não foi declarado.");
+    private void buscarIdentificador(String identificador) {
+        int escopo = k;
+
+        while (escopo >= 0) {
+            for (Tabela entrada : tabela) {
+                if (entrada.getIdentificador().equals(identificador) && entrada.getEscopo() == escopo) {
+                    return;
+                }
+            }
+            escopo--;
+        }
+
+        if (identificador != null) {
+            throw new RuntimeException("O identificador '" + identificador + "' não foi declarado no escopo atual.");
         }
     }
 
@@ -211,8 +223,7 @@ public class Sintatico3 {
                 this.token.getTipo() == Token.TIPO_REAL) {
             this.token = this.lexico.nextToken();
         } else {
-            throw new RuntimeException("Oxe, era para ser um identificador "
-                    + "ou número pertinho de " + this.token.getLexema());
+            throw new RuntimeException("Era pra ser um identificador ou número perto de " + this.token.getLexema());
         }
     }
 
@@ -220,9 +231,7 @@ public class Sintatico3 {
         if (this.token.getTipo() == Token.TIPO_OPERADOR_ARITMETICO) {
             this.token = this.lexico.nextToken();
         } else {
-            throw new RuntimeException("Oxe, era para ser um operador "
-                    + "aritmético (+,-,/,*) pertinho de " +
-                    this.token.getLexema());
+            throw new RuntimeException("Era pra ser um operador aritmético (+,-,/,*) perto de " + this.token.getLexema());
         }
     }
 }
