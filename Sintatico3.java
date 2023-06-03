@@ -1,17 +1,13 @@
 package compiladorl3;
 
-import java.util.ArrayList;
-
 public class Sintatico3 {
     private final Lexico lexico;
     private Token token;
-    private ArrayList<Tabela> tabela;
-    private int k;
+    private LDELista<String> lista;
 
     public Sintatico3(Lexico lexico) {
         this.lexico = lexico;
-        this.tabela = new ArrayList<>();
-        this.k = 0;
+        this.lista = new LDELista<>();
     }
 
     public void S() {
@@ -43,11 +39,18 @@ public class Sintatico3 {
         if (!this.token.getLexema().equals("{")) {
             throw new RuntimeException("Oxe, era pra ter um \"{\" perto de " + this.token.getLexema());
         }
+        //adiciona na lista dupla as chaves
+        lista.addLast(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         this.CS();
         if (!this.token.getLexema().equals("}")) {
             throw new RuntimeException("Oxe, era pra ter um \"}\" perto de " + this.token.getLexema());
         }
+
+        //exclui todos indentificadores dentro das chaves, excluindo a chave
+        lista.removerEspecial("{");
+
         this.token = this.lexico.nextToken();
     }
 
@@ -73,7 +76,7 @@ public class Sintatico3 {
         } else if (this.token.getLexema().equals("if")) {
             this.CONDICIONAL();
         } else if (this.token.getLexema().equals("while")) {
-            this.LACODEREPETICAOWHILE();
+            this.LACODEREPETICAO();
         } else if (this.token.getLexema().equals("else")) {
             this.SENAO();
         } else {
@@ -85,25 +88,32 @@ public class Sintatico3 {
         if (!(this.token.getLexema().equals("int") || this.token.getLexema().equals("float"))) {
             throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
+
         this.token = this.lexico.nextToken();
+
         if (this.token.getTipo() != Token.TIPO_IDENTIFICADOR) {
             throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
-        String identificador = this.token.getLexema();
+
+        //pesquisar na lista se ja existe e adiciona na lista
+        this.JADECLAROU(this.token.getLexema());
+        lista.addLast(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
+
         if (!this.token.getLexema().equals(";")) {
             throw new RuntimeException("Tu vacilou na declaração de variável. Perto de: " + this.token.getLexema());
         }
         this.token = this.lexico.nextToken();
-
-        tabela.add(new Tabela(identificador, k));
     }
 
     private void ATRIBUICAO() {
         if (this.token.getTipo() != Token.TIPO_IDENTIFICADOR) {
             throw new RuntimeException("Erro na atribuição. Perto de: " + this.token.getLexema());
         }
-        String identificador = this.token.getLexema();
+
+        this.NAODECLAROU(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_ATRIBUICAO) {
             throw new RuntimeException("Erro na atribuição. Perto de: " + this.token.getLexema());
@@ -115,10 +125,9 @@ public class Sintatico3 {
         }
         this.token = this.lexico.nextToken();
 
-        buscarIdentificador(identificador);
     }
 
-    private void LACODEREPETICAOWHILE() {
+    private void LACODEREPETICAO() {
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals("(")) {
             throw new RuntimeException("Era pra ter aberto o parêntese");
@@ -128,6 +137,8 @@ public class Sintatico3 {
         if (!(this.token.getTipo() == Token.TIPO_IDENTIFICADOR || this.token.getTipo() == Token.TIPO_INTEIRO)) {
             throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
+
+        this.NAODECLAROU(this.token.getLexema());
 
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_RELACIONAL) {
@@ -139,6 +150,8 @@ public class Sintatico3 {
             throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
+        this.NAODECLAROU(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals(")")) {
             throw new RuntimeException("Era pra ter fechado o parêntese");
@@ -146,8 +159,6 @@ public class Sintatico3 {
         this.token = this.lexico.nextToken();
 
         this.B();
-
-        buscarIdentificador(null);
     }
 
     private void CONDICIONAL() {
@@ -161,6 +172,8 @@ public class Sintatico3 {
             throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
+        this.NAODECLAROU(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         if (this.token.getTipo() != Token.TIPO_OPERADOR_RELACIONAL) {
             throw new RuntimeException("Era pra ter um operador relacional");
@@ -171,6 +184,8 @@ public class Sintatico3 {
             throw new RuntimeException("Era pra ter um inteiro ou um identificador");
         }
 
+        this.NAODECLAROU(this.token.getLexema());
+
         this.token = this.lexico.nextToken();
         if (!this.token.getLexema().equals(")")) {
             throw new RuntimeException("Era pra ter fechado o parêntese");
@@ -178,8 +193,6 @@ public class Sintatico3 {
         this.token = this.lexico.nextToken();
 
         this.B();
-
-        buscarIdentificador(null);
     }
 
     private void SENAO() {
@@ -187,20 +200,19 @@ public class Sintatico3 {
         this.B();
     }
 
-    private void buscarIdentificador(String identificador) {
-        int escopo = k;
-
-        while (escopo >= 0) {
-            for (Tabela entrada : tabela) {
-                if (entrada.getIdentificador().equals(identificador) && entrada.getEscopo() == escopo) {
-                    return;
-                }
+    private void JADECLAROU(String id){
+        if(this.token.getTipo() == Token.TIPO_IDENTIFICADOR) {
+            if (lista.buscarObjeto(id)) {
+                throw new RuntimeException("Tu já declarou a variável: " + this.token.getLexema());
             }
-            escopo--;
         }
+    }
 
-        if (identificador != null) {
-            throw new RuntimeException("O identificador '" + identificador + "' não foi declarado no escopo atual.");
+    private void NAODECLAROU(String id){
+        if(this.token.getTipo() == Token.TIPO_IDENTIFICADOR){
+            if(!lista.buscarObjeto(id)){
+                throw new RuntimeException("Tu não declarou a variável: " + this.token.getLexema());
+            }
         }
     }
 

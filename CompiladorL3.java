@@ -5,15 +5,8 @@
  */
 package compiladorl3;
 
-/**
- *
- * @author tarci
- */
 public class CompiladorL3 {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         // TODO code application logic here
         Lexico lexico = new Lexico("C:/Users/Luise/Documents/Católica/2023.1/Compilador/compilador-main/CompiladorL3/src/compiladorl3/codigo.txt");
